@@ -24,7 +24,7 @@ class UserForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         # Force all fields required except password
-        for field in self.fields:
+        for field in self.fields:s
             if field != 'password':
                 self.fields[field].required = True
 

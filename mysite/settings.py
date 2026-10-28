@@ -41,6 +41,12 @@ INSTALLED_APPS = [
     'apps.core',
     'apps.users',
     'apps.info',
+    'apps.subject',
+    'apps.feedback',
+    'apps.student_subjects',
+    'apps.recomindations',
+    'apps.study_resources',
+    'apps.students',
 ]
 
 MIDDLEWARE = [
@@ -79,7 +85,7 @@ WSGI_APPLICATION = 'mysite.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bsitcrud',
+        'NAME': 'study_res_db',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',
