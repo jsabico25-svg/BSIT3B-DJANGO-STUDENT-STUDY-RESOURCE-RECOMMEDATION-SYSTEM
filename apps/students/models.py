@@ -1,8 +1,7 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 
-# Create your models here.
-class Students(models.Model):
+
+class Student(models.Model):
     student_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100)
     email = models.EmailField(max_length=100, unique=True)

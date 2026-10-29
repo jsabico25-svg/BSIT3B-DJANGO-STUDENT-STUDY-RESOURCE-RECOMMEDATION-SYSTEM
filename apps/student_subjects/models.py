@@ -1,7 +1,9 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 
-# Create your models here.
+from apps.students.models import Student
+from apps.subject.models import Subject
+
+
 class StudentSubject(models.Model):
     student_subject_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(

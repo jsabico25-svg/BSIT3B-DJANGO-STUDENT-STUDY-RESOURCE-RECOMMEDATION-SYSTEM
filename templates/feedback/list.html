@@ -1,0 +1,229 @@
+{% extends "theme/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row align-items-center">
+        <div class="col">
+          <div class="page-pretitle">Study Resources</div>
+          <h2 class="page-title mb-0">Feedback</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+  <br>
+
+  <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-1">
+    <form method="GET" class="w-100">
+      <div class="row g-2">
+        <div class="col-12 col-md-4">
+          <div class="input-group">
+            <span class="input-group-text"><i class="ti ti-search"></i></span>
+            <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search student, resource or comment...">
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <select name="student" class="form-select">
+            <option value="">All students</option>
+            {% for student in students %}
+            <option value="{{ student.pk }}" {% if selected_student == student.pk|stringformat:"s" %}selected{% endif %}>{{ student.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <select name="rating" class="form-select">
+            <option value="">All ratings</option>
+            {% for value in rating_choices %}
+            <option value="{{ value }}" {% if selected_rating == value|stringformat:"s" %}selected{% endif %}>{{ value }} star{{ value|pluralize }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-2 d-flex gap-1">
+          <button type="submit" class="btn btn-primary flex-fill">Filter</button>
+          <a href="{% url 'feedback:feedback_list' %}" class="btn btn-outline-secondary" title="Reset filters"><i class="ti ti-x"></i></a>
+        </div>
+      </div>
+    </form>
+
+    <button type="button" class="btn btn-primary mt-n4" data-bs-toggle="modal" data-bs-target="#crudModal" data-mode="create">
+      <i class="fas fa-plus-circle me-2"></i> Add Feedback
+    </button>
+  </div>
+
+  {% include 'theme/toasts.html' %}
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">All Feedback</div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover card-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student</th>
+            <th>Resource</th>
+            <th>Rating</th>
+            <th>Comment</th>
+            <th>Date</th>
+            <th class="w-1">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in feedbacks %}
+          <tr>
+            <td class="text-muted">{{ forloop.counter0|add:feedbacks.start_index }}</td>
+            <td class="fw-semibold text-nowrap">{{ f.student.name }}</td>
+            <td style="max-width: 260px;">
+              <div class="text-truncate" title="{{ f.resource.title }}">{{ f.resource.title }}</div>
+              <div class="text-muted small">{{ f.resource.subject.subject_name }}</div>
+            </td>
+            <td class="text-nowrap">
+              {% for i in "12345" %}
+                {% if forloop.counter <= f.rating %}<i class="fas fa-star text-yellow"></i>{% else %}<i class="far fa-star text-muted"></i>{% endif %}
+              {% endfor %}
+              <span class="text-muted small ms-1">{{ f.rating }}/5</span>
+            </td>
+            <td class="text-muted" style="max-width: 280px;">
+              {% if f.comment %}<span title="{{ f.comment }}">{{ f.comment|truncatechars:70 }}</span>{% else %}—{% endif %}
+            </td>
+            <td class="text-muted text-nowrap">{{ f.created_at|date:"M d, Y" }}</td>
+            <td>
+              <div class="d-flex gap-1">
+                <button type="button" class="btn btn-ghost-secondary btn-icon btn-sm"
+                        data-bs-toggle="modal" data-bs-target="#crudModal" data-mode="edit"
+                        data-id="{{ f.pk }}" data-student="{{ f.student_id }}" data-resource="{{ f.resource_id }}"
+                        data-rating="{{ f.rating }}" data-comment="{{ f.comment|default_if_none:'' }}"
+                        title="Edit">
+                  <i class="fas fa-edit text-primary"></i>
+                </button>
+                <button type="button" class="btn btn-ghost-secondary btn-icon btn-sm"
+                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                        data-delete-url="{% url 'feedback:feedback_delete_ajax' f.pk %}"
+                        data-label="{{ f.student.name }}'s feedback on {{ f.resource.title }}"
+                        title="Delete">
+                  <i class="fas fa-trash-alt text-danger"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">
+              <div class="empty py-5">
+                <div class="empty-icon"><i class="fas fa-comment-dots fa-2x text-muted"></i></div>
+                <p class="empty-title">No feedback found</p>
+                <p class="empty-subtitle">Record student ratings to improve recommendations.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if feedbacks.paginator.num_pages > 1 %}
+    <div class="card-footer d-flex align-items-center">
+      <p class="m-0 text-muted">
+        Showing <span class="fw-medium">{{ feedbacks.start_index }}</span>
+        to <span class="fw-medium">{{ feedbacks.end_index }}</span>
+        of <span class="fw-medium">{{ feedbacks.paginator.count }}</span> feedback entries
+      </p>
+      <ul class="pagination m-0 ms-auto">
+        {% if feedbacks.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ feedbacks.previous_page_number }}&q={{ query|urlencode }}&student={{ selected_student }}&rating={{ selected_rating }}">prev</a>
+        </li>
+        {% endif %}
+        {% for num in feedbacks.paginator.page_range %}
+        <li class="page-item {% if feedbacks.number == num %}active{% endif %}">
+          <a class="page-link" href="?page={{ num }}&q={{ query|urlencode }}&student={{ selected_student }}&rating={{ selected_rating }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if feedbacks.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ feedbacks.next_page_number }}&q={{ query|urlencode }}&student={{ selected_student }}&rating={{ selected_rating }}">next</a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal modal-blur fade" id="crudModal" data-create-title="Add Feedback" data-edit-title="Edit Feedback" tabindex="-1">
+  <div class="modal-dialog modal-md modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="crudModalTitle">Add Feedback</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="crudForm" data-url="{% url 'feedback:feedback_save_ajax' %}">
+        {% csrf_token %}
+        <input type="hidden" name="id" id="crud_id">
+        <div class="modal-body">
+          <div id="crudFormError" class="alert alert-danger d-none"></div>
+          <div class="mb-3">
+            <label class="form-label">Student</label>
+            <select name="student" class="form-select" required>
+              <option value="">Choose student</option>
+              {% for student in students %}
+              <option value="{{ student.pk }}">{{ student.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Resource</label>
+            <select name="resource" class="form-select" required>
+              <option value="">Choose resource</option>
+              {% for resource in resources %}
+              <option value="{{ resource.pk }}">{{ resource.title }} — {{ resource.subject.subject_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Rating</label>
+            <select name="rating" class="form-select" required>
+              <option value="">Choose rating</option>
+              {% for value in rating_choices %}
+              <option value="{{ value }}">{{ value }} star{{ value|pluralize }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-0">
+            <label class="form-label">Comment <span class="text-muted">(optional)</span></label>
+            <textarea name="comment" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="crudSubmitBtn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal modal-blur fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">Delete Feedback</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Delete <strong id="deleteLabel"></strong>?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/crud.js' %}"></script>
+{% endblock %}

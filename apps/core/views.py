@@ -6,9 +6,17 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.db.models import Avg
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_http_methods
+
+from apps.feedback.models import Feedback
+from apps.recomindations.models import Recommendation
+from apps.student_subjects.models import StudentSubject
+from apps.students.models import Student
+from apps.study_resources.models import StudyResource
+from apps.subject.models import Subject
 
 User = get_user_model()
 
@@ -140,7 +148,23 @@ def logout_view(request):
 
 @login_required(login_url='login')
 def home(request):
-    return render(request, 'home.html')
+    avg_rating = Feedback.objects.aggregate(avg=Avg('rating'))['avg']
+    context = {
+        'student_count': Student.objects.count(),
+        'subject_count': Subject.objects.count(),
+        'resource_count': StudyResource.objects.count(),
+        'enrollment_count': StudentSubject.objects.count(),
+        'feedback_count': Feedback.objects.count(),
+        'recommendation_count': Recommendation.objects.count(),
+        'avg_rating': avg_rating,
+        'recent_recommendations': Recommendation.objects.select_related(
+            'student', 'resource', 'resource__subject'
+        ).order_by('-recommended_at')[:5],
+        'recent_feedback': Feedback.objects.select_related(
+            'student', 'resource'
+        ).order_by('-created_at')[:5],
+    }
+    return render(request, 'home.html', context)
 
 
 @require_http_methods(['GET', 'POST'])

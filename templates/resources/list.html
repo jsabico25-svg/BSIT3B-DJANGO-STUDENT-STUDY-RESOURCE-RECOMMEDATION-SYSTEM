@@ -1,0 +1,265 @@
+{% extends "theme/base.html" %}
+{% load static %}
+{% block content %}
+<div class="container-xl">
+  <div class="page-header d-print-none" aria-label="Page header">
+    <div class="container-xl">
+      <div class="row align-items-center">
+        <div class="col">
+          <div class="page-pretitle">Study Resources</div>
+          <h2 class="page-title mb-0">Resources</h2>
+        </div>
+      </div>
+    </div>
+  </div>
+  <br>
+
+  <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-2 mb-1">
+    <form method="GET" class="w-100">
+      <div class="row g-2">
+        <div class="col-12 col-md-4">
+          <div class="input-group">
+            <span class="input-group-text"><i class="ti ti-search"></i></span>
+            <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search resources...">
+          </div>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="subject" class="form-select">
+            <option value="">All subjects</option>
+            {% for subject in subjects %}
+            <option value="{{ subject.pk }}" {% if selected_subject == subject.pk|stringformat:"s" %}selected{% endif %}>{{ subject.subject_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="type" class="form-select">
+            <option value="">All types</option>
+            {% for type in types %}
+            <option value="{{ type }}" {% if selected_type == type %}selected{% endif %}>{{ type }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <select name="difficulty" class="form-select">
+            <option value="">All levels</option>
+            {% for level in difficulties %}
+            <option value="{{ level }}" {% if selected_difficulty == level %}selected{% endif %}>{{ level }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-2 d-flex gap-1">
+          <button type="submit" class="btn btn-primary flex-fill">Filter</button>
+          <a href="{% url 'study_resources:resource_list' %}" class="btn btn-outline-secondary" title="Reset filters"><i class="ti ti-x"></i></a>
+        </div>
+      </div>
+    </form>
+
+    <button type="button" class="btn btn-primary mt-n4" data-bs-toggle="modal" data-bs-target="#crudModal" data-mode="create">
+      <i class="fas fa-plus-circle me-2"></i> Add Resource
+    </button>
+  </div>
+
+  {% include 'theme/toasts.html' %}
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">All Resources</div>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-vcenter table-hover card-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Subject</th>
+            <th>Type</th>
+            <th>Difficulty</th>
+            <th>Rating</th>
+            <th class="w-1">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in resources %}
+          <tr>
+            <td class="text-muted">{{ forloop.counter0|add:resources.start_index }}</td>
+            <td style="max-width: 320px;">
+              <div class="fw-semibold text-truncate" title="{{ r.title }}">{{ r.title }}</div>
+              {% if r.description %}<div class="text-muted small text-truncate">{{ r.description|truncatechars:70 }}</div>{% endif %}
+            </td>
+            <td class="text-muted">{{ r.subject.subject_name }}</td>
+            <td>{% if r.resource_type %}<span class="badge bg-purple-lt text-purple">{{ r.resource_type }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+            <td>
+              {% if r.difficulty_level == "Beginner" %}<span class="badge bg-green-lt text-green">Beginner</span>
+              {% elif r.difficulty_level == "Intermediate" %}<span class="badge bg-yellow-lt text-yellow">Intermediate</span>
+              {% elif r.difficulty_level == "Advanced" %}<span class="badge bg-red-lt text-red">Advanced</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              {% if r.avg_rating %}
+              <span class="text-yellow"><i class="fas fa-star"></i> {{ r.avg_rating|floatformat:1 }}</span>
+              <span class="text-muted small">({{ r.feedback_count }})</span>
+              {% else %}
+              <span class="text-muted small">No ratings</span>
+              {% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                {% if r.resource_url %}
+                <a href="{{ r.resource_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-ghost-secondary btn-icon btn-sm" title="Open resource">
+                  <i class="fas fa-external-link-alt text-secondary"></i>
+                </a>
+                {% endif %}
+                <button type="button" class="btn btn-ghost-secondary btn-icon btn-sm"
+                        data-bs-toggle="modal" data-bs-target="#crudModal" data-mode="edit"
+                        data-id="{{ r.pk }}" data-title="{{ r.title }}" data-subject="{{ r.subject_id }}"
+                        data-resource-type="{{ r.resource_type|default_if_none:'' }}"
+                        data-resource-url="{{ r.resource_url|default_if_none:'' }}"
+                        data-difficulty-level="{{ r.difficulty_level|default_if_none:'' }}"
+                        data-description="{{ r.description|default_if_none:'' }}"
+                        title="Edit">
+                  <i class="fas fa-edit text-primary"></i>
+                </button>
+                <button type="button" class="btn btn-ghost-secondary btn-icon btn-sm"
+                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                        data-delete-url="{% url 'study_resources:resource_delete_ajax' r.pk %}"
+                        data-label="{{ r.title }}"
+                        title="Delete">
+                  <i class="fas fa-trash-alt text-danger"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7">
+              <div class="empty py-5">
+                <div class="empty-icon"><i class="fas fa-folder-open fa-2x text-muted"></i></div>
+                <p class="empty-title">No resources found</p>
+                <p class="empty-subtitle">Adjust your filters or add a new study resource.</p>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if resources.paginator.num_pages > 1 %}
+    <div class="card-footer d-flex align-items-center">
+      <p class="m-0 text-muted">
+        Showing <span class="fw-medium">{{ resources.start_index }}</span>
+        to <span class="fw-medium">{{ resources.end_index }}</span>
+        of <span class="fw-medium">{{ resources.paginator.count }}</span> resources
+      </p>
+      <ul class="pagination m-0 ms-auto">
+        {% if resources.has_previous %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ resources.previous_page_number }}&q={{ query|urlencode }}&subject={{ selected_subject }}&type={{ selected_type|urlencode }}&difficulty={{ selected_difficulty|urlencode }}">prev</a>
+        </li>
+        {% endif %}
+        {% for num in resources.paginator.page_range %}
+        <li class="page-item {% if resources.number == num %}active{% endif %}">
+          <a class="page-link" href="?page={{ num }}&q={{ query|urlencode }}&subject={{ selected_subject }}&type={{ selected_type|urlencode }}&difficulty={{ selected_difficulty|urlencode }}">{{ num }}</a>
+        </li>
+        {% endfor %}
+        {% if resources.has_next %}
+        <li class="page-item">
+          <a class="page-link" href="?page={{ resources.next_page_number }}&q={{ query|urlencode }}&subject={{ selected_subject }}&type={{ selected_type|urlencode }}&difficulty={{ selected_difficulty|urlencode }}">next</a>
+        </li>
+        {% endif %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="modal modal-blur fade" id="crudModal" data-create-title="Add Resource" data-edit-title="Edit Resource" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="crudModalTitle">Add Resource</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="crudForm" data-url="{% url 'study_resources:resource_save_ajax' %}">
+        {% csrf_token %}
+        <input type="hidden" name="id" id="crud_id">
+        <div class="modal-body">
+          <div id="crudFormError" class="alert alert-danger d-none"></div>
+          <div class="row g-3">
+            <div class="col-md-8">
+              <label class="form-label">Title</label>
+              <input type="text" name="title" class="form-control" maxlength="200" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Subject</label>
+              <select name="subject" class="form-select" required>
+                <option value="">Choose subject</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.pk }}">{{ subject.subject_name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Resource Type</label>
+              <input type="text" name="resource_type" class="form-control" maxlength="50" list="resourceTypeOptions" placeholder="e.g. Video, Article, Book">
+              <datalist id="resourceTypeOptions">
+                <option value="Article"></option>
+                <option value="Book"></option>
+                <option value="Video"></option>
+                <option value="Practice Set"></option>
+                <option value="Documentation"></option>
+              </datalist>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Difficulty Level</label>
+              <select name="difficulty_level" class="form-select">
+                <option value="">Not set</option>
+                {% for level in difficulties %}
+                <option value="{{ level }}">{{ level }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Resource URL <span class="text-muted">(optional)</span></label>
+              <input type="url" name="resource_url" class="form-control" maxlength="500" placeholder="https://...">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Description <span class="text-muted">(optional)</span></label>
+              <textarea name="description" class="form-control" rows="3"></textarea>
+            </div>
+          </div>
+          {% if not subjects %}
+          <div class="alert alert-warning mt-3 mb-0">No subjects exist yet. Add a subject first.</div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="crudSubmitBtn">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal modal-blur fade" id="deleteModal" tabindex="-1">
+  <div class="modal-dialog modal-sm modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title text-danger">Delete Resource</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">Delete <strong id="deleteLabel"></strong>? Its feedback and recommendations will also be removed.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="deleteConfirmBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/crud.js' %}"></script>
+{% endblock %}

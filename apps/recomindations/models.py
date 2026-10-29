@@ -1,8 +1,9 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+
+from apps.study_resources.models import StudyResource
+from apps.students.models import Student
 
 
-# Create your models here.
 class Recommendation(models.Model):
     recommendation_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(

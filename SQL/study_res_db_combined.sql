@@ -18,7 +18,13 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `bsitcrud`
+-- Database: `study_res_db`
+--
+-- Combined dump:
+--   * `bsitcrud`          -> foundation (auth, admin, sessions, tblinfo and data)
+--   * `study_resourse_db` -> study-resource domain schema
+--                            (subjects, students, study_resources,
+--                             student_subjects, feedback, recommendations)
 --
 
 -- --------------------------------------------------------
@@ -312,7 +318,12 @@ INSERT INTO `django_migrations` (`id`, `app`, `name`, `applied`) VALUES
 (42, 'students', '0004_tblstudents_user', '2026-08-07 06:30:49.635627'),
 (43, 'students', '0005_assign_student_ownership', '2026-08-07 06:30:49.642613'),
 (44, 'courses', '0009_delete_courseschedule', '2026-09-28 13:26:33.001214'),
-(45, 'info', '0001_initial', '2026-09-28 13:26:33.140759');
+(45, 'info', '0001_initial', '2026-09-28 13:26:33.140759'),
+(46, 'subject', '0001_initial', '2026-10-29 00:00:00.000000'),
+(47, 'study_resources', '0001_initial', '2026-10-29 00:00:00.000000'),
+(48, 'student_subjects', '0001_initial', '2026-10-29 00:00:00.000000'),
+(49, 'feedback', '0001_initial', '2026-10-29 00:00:00.000000'),
+(50, 'recomindations', '0001_initial', '2026-10-29 00:00:00.000000');
 
 -- --------------------------------------------------------
 
@@ -528,7 +539,7 @@ ALTER TABLE `django_content_type`
 -- AUTO_INCREMENT for table `django_migrations`
 --
 ALTER TABLE `django_migrations`
-  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=51;
 
 --
 -- AUTO_INCREMENT for table `tblinfo`
@@ -579,6 +590,131 @@ ALTER TABLE `django_admin_log`
 --
 ALTER TABLE `tblinfo`
   ADD CONSTRAINT `tblinfo_user_id_4a36749d_fk_auth_user_id` FOREIGN KEY (`user_id`) REFERENCES `auth_user` (`id`);
+
+-- --------------------------------------------------------
+--
+-- Study-resource domain tables (from `study_resourse_db`)
+--
+
+--
+-- Table structure for table `subjects`
+--
+
+CREATE TABLE `subjects` (
+  `subject_id` int(11) NOT NULL AUTO_INCREMENT,
+  `subject_name` varchar(100) NOT NULL,
+  `description` longtext DEFAULT NULL,
+  PRIMARY KEY (`subject_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `students`
+--
+
+CREATE TABLE `students` (
+  `student_id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(100) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `course` varchar(100) DEFAULT NULL,
+  `year_level` int(11) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL DEFAULT current_timestamp(6),
+  PRIMARY KEY (`student_id`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `study_resources`
+--
+
+CREATE TABLE `study_resources` (
+  `resource_id` int(11) NOT NULL AUTO_INCREMENT,
+  `subject_id` int(11) NOT NULL,
+  `title` varchar(200) NOT NULL,
+  `description` longtext DEFAULT NULL,
+  `resource_type` varchar(50) DEFAULT NULL,
+  `resource_url` varchar(500) DEFAULT NULL,
+  `difficulty_level` varchar(30) DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL DEFAULT current_timestamp(6),
+  PRIMARY KEY (`resource_id`),
+  KEY `study_resources_subject_id` (`subject_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `student_subjects`
+--
+
+CREATE TABLE `student_subjects` (
+  `student_subject_id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `subject_id` int(11) NOT NULL,
+  `skill_level` varchar(30) NOT NULL DEFAULT 'Beginner',
+  PRIMARY KEY (`student_subject_id`),
+  UNIQUE KEY `unique_student_subject` (`student_id`,`subject_id`),
+  KEY `student_subjects_subject_id` (`subject_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `feedback`
+--
+
+CREATE TABLE `feedback` (
+  `feedback_id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `resource_id` int(11) NOT NULL,
+  `rating` int(11) NOT NULL,
+  `comment` longtext DEFAULT NULL,
+  `created_at` datetime(6) NOT NULL DEFAULT current_timestamp(6),
+  PRIMARY KEY (`feedback_id`),
+  KEY `feedback_student_id` (`student_id`),
+  KEY `feedback_resource_id` (`resource_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `recommendations`
+--
+
+CREATE TABLE `recommendations` (
+  `recommendation_id` int(11) NOT NULL AUTO_INCREMENT,
+  `student_id` int(11) NOT NULL,
+  `resource_id` int(11) NOT NULL,
+  `score` decimal(5,2) DEFAULT 0.00,
+  `recommended_at` datetime(6) NOT NULL DEFAULT current_timestamp(6),
+  PRIMARY KEY (`recommendation_id`),
+  KEY `recommendations_student_id` (`student_id`),
+  KEY `recommendations_resource_id` (`resource_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+--
+-- Constraints for study-resource tables
+--
+
+ALTER TABLE `study_resources`
+  ADD CONSTRAINT `study_resources_ibfk_1` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`subject_id`) ON DELETE CASCADE;
+
+ALTER TABLE `student_subjects`
+  ADD CONSTRAINT `student_subjects_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `student_subjects_ibfk_2` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`subject_id`) ON DELETE CASCADE;
+
+ALTER TABLE `feedback`
+  ADD CONSTRAINT `feedback_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `feedback_ibfk_2` FOREIGN KEY (`resource_id`) REFERENCES `study_resources` (`resource_id`) ON DELETE CASCADE;
+
+ALTER TABLE `recommendations`
+  ADD CONSTRAINT `recommendations_ibfk_1` FOREIGN KEY (`student_id`) REFERENCES `students` (`student_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `recommendations_ibfk_2` FOREIGN KEY (`resource_id`) REFERENCES `study_resources` (`resource_id`) ON DELETE CASCADE;
+
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

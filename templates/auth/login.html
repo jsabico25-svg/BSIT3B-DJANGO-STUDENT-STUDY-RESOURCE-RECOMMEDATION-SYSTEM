@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta http-equiv="X-UA-Compatible" content="ie=edge" />
   <title>
-    Sign in - Azuelo Technology
+    Sign in · StudyHub
   </title>
   <link href="{% static 'libs/jsvectormap/dist/jsvectormap.css' %}" rel="stylesheet" />
   <link href="{% static 'css/tabler.css' %}" rel="stylesheet" />
@@ -28,9 +28,9 @@
       <div class="card-body">
 
         <center class="mt-n4">
-        <i class='far fa-calendar' style='font-size:40px'></i>
+        <i class='fas fa-book-open' style='font-size:40px'></i>
         </center>
-        <h2 class="h3 text-center mb-4">Sign in to start your session</h2>
+        <h2 class="h3 text-center mb-4">Sign in to StudyHub</h2>
 
         <form method="post">
           {% csrf_token %}
@@ -72,7 +72,6 @@
 {% include 'theme/settings.html' %}
 
 <script src="{% static 'js/tabler.js' %}" defer></script>
-<script src="{% static 'js/demo.js' %}" defer></script>
 {% if locked %}
 <script>
   let remaining = {{ remaining }};

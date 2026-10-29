@@ -1,26 +1,196 @@
 {% extends "theme/base.html" %}
 {% block content %}
+{% include 'theme/toasts.html' %}
 <div class="container-xl">
   <div class="page-header d-print-none" aria-label="Page header">
     <div class="container-xl">
       <div class="row align-items-center">
         <div class="col">
           <div class="page-pretitle">Overview</div>
-          <div class="d-flex align-items-center gap-3 flex-wrap d-none d-md-flex">
-            <h2 class="page-title mb-0">Dashboard</h2>
+          <h2 class="page-title mb-0">Dashboard</h2>
+        </div>
+        <div class="col-auto ms-auto d-print-none">
+          <div class="btn-list">
+            <a href="{% url 'recomindations:recommendation_list' %}" class="btn btn-primary">
+              <i class="fas fa-magic me-2"></i> Recommendations
+            </a>
           </div>
-          <h2 class="page-title mb-0 d-md-none">Dashboard</h2>
         </div>
       </div>
     </div>
   </div>
   <br>
 
-  <div class="card">
-    <div class="card-body text-muted">
-      Dashboard
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6 col-lg-3">
+      <a href="{% url 'students:student_list' %}" class="card card-link h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-muted small text-uppercase">Students</div>
+              <div class="h1 mb-0">{{ student_count }}</div>
+            </div>
+            <span class="avatar bg-primary-lt text-primary"><i class="fas fa-user-graduate"></i></span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <a href="{% url 'subject:subject_list' %}" class="card card-link h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-muted small text-uppercase">Subjects</div>
+              <div class="h1 mb-0">{{ subject_count }}</div>
+            </div>
+            <span class="avatar bg-azure-lt text-azure"><i class="fas fa-book"></i></span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <a href="{% url 'study_resources:resource_list' %}" class="card card-link h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-muted small text-uppercase">Resources</div>
+              <div class="h1 mb-0">{{ resource_count }}</div>
+            </div>
+            <span class="avatar bg-purple-lt text-purple"><i class="fas fa-folder-open"></i></span>
+          </div>
+        </div>
+      </a>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <a href="{% url 'recomindations:recommendation_list' %}" class="card card-link h-100">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-muted small text-uppercase">Recommendations</div>
+              <div class="h1 mb-0">{{ recommendation_count }}</div>
+            </div>
+            <span class="avatar bg-green-lt text-green"><i class="fas fa-magic"></i></span>
+          </div>
+        </div>
+      </a>
     </div>
   </div>
 
+  <div class="row g-3 mb-3">
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase">Enrollments</div>
+          <div class="h2 mb-1">{{ enrollment_count }}</div>
+          <a href="{% url 'student_subjects:enrollment_list' %}" class="text-muted small">Manage enrollments</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase">Feedback Entries</div>
+          <div class="h2 mb-1">{{ feedback_count }}</div>
+          <a href="{% url 'feedback:feedback_list' %}" class="text-muted small">Manage feedback</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase">Average Rating</div>
+          <div class="h2 mb-1">
+            {% if avg_rating %}{{ avg_rating|floatformat:2 }} <span class="text-yellow"><i class="fas fa-star"></i></span>{% else %}—{% endif %}
+          </div>
+          <span class="text-muted small">Across all feedback</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-sm-6 col-lg-3">
+      <div class="card h-100">
+        <div class="card-body">
+          <div class="text-muted small text-uppercase">Quick Actions</div>
+          <div class="d-flex flex-wrap gap-2 mt-2">
+            <a href="{% url 'study_resources:resource_list' %}" class="btn btn-sm btn-outline-primary">Add Resource</a>
+            <a href="{% url 'student_subjects:enrollment_list' %}" class="btn btn-sm btn-outline-primary">Enroll</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card h-100">
+        <div class="card-header">
+          <div class="card-title">Recent Recommendations</div>
+          <div class="card-actions">
+            <a href="{% url 'recomindations:recommendation_list' %}" class="text-muted small">View all</a>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-vcenter card-table">
+            <thead>
+              <tr>
+                <th>Student</th>
+                <th>Resource</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in recent_recommendations %}
+              <tr>
+                <td class="fw-semibold text-nowrap">{{ r.student.name }}</td>
+                <td style="max-width: 260px;">
+                  <div class="text-truncate" title="{{ r.resource.title }}">{{ r.resource.title }}</div>
+                  <div class="text-muted small">{{ r.resource.subject.subject_name }}</div>
+                </td>
+                <td><span class="badge {% if r.score >= 80 %}bg-green-lt text-green{% elif r.score >= 60 %}bg-yellow-lt text-yellow{% else %}bg-red-lt text-red{% endif %}">{{ r.score|floatformat:1 }}</span></td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="3" class="text-center text-muted py-4">
+                  No recommendations yet. Enroll students, then generate recommendations.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-5">
+      <div class="card h-100">
+        <div class="card-header">
+          <div class="card-title">Recent Feedback</div>
+          <div class="card-actions">
+            <a href="{% url 'feedback:feedback_list' %}" class="text-muted small">View all</a>
+          </div>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for f in recent_feedback %}
+          <div class="list-group-item">
+            <div class="d-flex align-items-center justify-content-between gap-2">
+              <div class="min-w-0">
+                <div class="fw-semibold text-truncate">{{ f.student.name }}</div>
+                <div class="text-muted small text-truncate">{{ f.resource.title }}</div>
+              </div>
+              <div class="text-nowrap">
+                {% for i in "12345" %}
+                  {% if forloop.counter <= f.rating %}<i class="fas fa-star text-yellow"></i>{% else %}<i class="far fa-star text-muted"></i>{% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="list-group-item text-center text-muted py-4">
+            No feedback recorded yet.
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

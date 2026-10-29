@@ -1,21 +1,33 @@
-from django.shortcuts import render, get_object_or_404
+from functools import wraps
+
+from django.shortcuts import get_object_or_404, redirect, render
 from django.http import JsonResponse
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.core.paginator import Paginator
 from django.db import IntegrityError
 from django.db.models import Q
 
 
-def _is_superuser(user):
-    return user.is_superuser
+def superuser_only(view_func):
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            messages.error(
+                request,
+                'The Users page is only available to administrators.',
+            )
+            return redirect('dashboard')
+        return view_func(request, *args, **kwargs)
+
+    return wrapper
 
 
 # PAGE
 @login_required(login_url='login')
-@user_passes_test(_is_superuser, login_url='dashboard')
+@superuser_only
 def user_list_page(request):
     query = request.GET.get('q', '').strip()
 
@@ -41,7 +53,7 @@ def user_list_page(request):
 
 # LIST USERS (AJAX)
 @login_required(login_url='login')
-@user_passes_test(_is_superuser, login_url='dashboard')
+@superuser_only
 def user_list_ajax(request):
     users_list = User.objects.all().order_by('-date_joined')
     paginator = Paginator(users_list, 10)
@@ -69,7 +81,7 @@ def user_list_ajax(request):
 
 # GET SINGLE USER (AJAX)
 @login_required(login_url='login')
-@user_passes_test(_is_superuser, login_url='dashboard')
+@superuser_only
 def user_get_ajax(request, pk):
     user = get_object_or_404(User, pk=pk)
     return JsonResponse({
@@ -85,7 +97,7 @@ def user_get_ajax(request, pk):
 
 # CREATE / UPDATE USER (AJAX)
 @login_required(login_url='login')
-@user_passes_test(_is_superuser, login_url='dashboard')
+@superuser_only
 @require_POST
 def user_save_ajax(request):
     user_id = request.POST.get("id")
@@ -148,7 +160,7 @@ def user_save_ajax(request):
 
 # DELETE USER (AJAX)
 @login_required(login_url='login')
-@user_passes_test(_is_superuser, login_url='dashboard')
+@superuser_only
 @require_POST
 def user_delete_ajax(request, pk):
     user = get_object_or_404(User, pk=pk)

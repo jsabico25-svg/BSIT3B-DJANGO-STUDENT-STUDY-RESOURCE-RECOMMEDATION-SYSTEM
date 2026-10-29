@@ -1,12 +1,14 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+from apps.study_resources.models import StudyResource
+from apps.students.models import Student
 
-# Create your models here.
+
 class Feedback(models.Model):
     feedback_id = models.AutoField(primary_key=True)
     student = models.ForeignKey(
-        students,
+        Student,
         related_name='feedbacks',
         on_delete=models.CASCADE,
     )
